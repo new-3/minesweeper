@@ -176,7 +176,7 @@ class Game:
         tile_image = load_image('tile.png', self.TILE_SIZE)
         mine_image = load_image('mine.png', self.TILE_SIZE)
         flag_image = load_image('flag.png', self.TILE_SIZE)
-        gui_font = load_font("Akrobat-Bold.otf", self.GUI_FONT_SIZE)
+        gui_font = load_font("Orbitron.ttf", self.GUI_FONT_SIZE)
 
         self.board = Board(
             self.n_rows, self.n_cols, self.n_mines,

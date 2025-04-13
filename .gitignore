@@ -3,6 +3,7 @@ build
 doc/_build
 doc/generated
 examples/.ipynb_checkpoints
+state
 
 *.c
 *.so
