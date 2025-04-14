@@ -117,6 +117,9 @@ class Leaderboard:
             x_time += self.section_width
 
     def needs_update(self, difficulty, time):
+        # disable update
+        return False
+    
         """Check whether the leaderboard needs to be updated."""
         if difficulty not in self.data:
             return False
