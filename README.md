@@ -20,8 +20,8 @@ It looks like a reasonable design for such a simple game.
 
 There is a `Board` class representing the minesweeper game board and several
 (quite sketchy) GUI elements in `gui.py`. There is also a `Leaderboard` class
-which stores, updates and displays leaderboard. `MinesweeperAI` class covers AI's
-move on the board.
+which stores, updates and displays leaderboard. `MinesweeperAI` class in `ai.py` 
+decides AI's move on the board.
 
 The main `Game` class puts it all together.
 
