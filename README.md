@@ -29,4 +29,4 @@ Credits
 -------
 The closed tile sprite and font to display mine counts by kenney.nl
 
-Font for GUI is from here https://fonts.google.com/specimen/Orbitron
+Font for GUI is from here https://fonts.google.com/specimen/Space+Mono
