@@ -1,8 +1,9 @@
-A classic minesweeper game written with pygame. Here is a short [demo](https://youtu.be/gT6FjFHyxF4) with a gameplay.
+A classic minesweeper game written with pygame.
+AI will solve the game using knowledges revealed on the board.
 
 Dependencies
 ------------
-The code was run in `Python 3.6`, `pygame 1.9.3` and `numpy 1.12.1`. Other
+The code was run in `Python 3.12.9`, `pygame 2.6.1` and `numpy 2.2.4`. Other
 versions might work too.
 
 How to run
@@ -19,11 +20,13 @@ It looks like a reasonable design for such a simple game.
 
 There is a `Board` class representing the minesweeper game board and several
 (quite sketchy) GUI elements in `gui.py`. There is also a `Leaderboard` class
-which stores, updates and displays leaderboard. The main `Game` class puts it
-all together. 
+which stores, updates and displays leaderboard. `MinesweeperAI` class covers AI's
+move on the board.
+
+The main `Game` class puts it all together.
 
 Credits
 -------
 The closed tile sprite and font to display mine counts by kenney.nl
 
-Font for GUI is from here http://www.fontfabric.com/akrobat/  
+Font for GUI is from here https://fonts.google.com/specimen/Orbitron
