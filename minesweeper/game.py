@@ -137,12 +137,19 @@ class Game:
     FIELD_BG_COLOR = pygame.Color('#d7dcdc')
     FIELD_LINES_COLOR = pygame.Color('#738383')
     GUI_FONT_COLOR = pygame.Color('Light Yellow')
+    GUI_AI_FONT_COLOR = pygame.Color('Yellow')
     GUI_FONT_SIZE = 13
     DIGITS = {chr(c) for c in range(ord('0'), ord('9') + 1)}
     MAX_BOARD_DIMENSION = 50
     MIN_BOARD_DIMENSION_DISPLAY = 10
     MAX_NAME_LENGTH = 8
     DELAY_BEFORE_NAME_INPUT_MS = 1000
+    # AI related
+    BOTTOM_MARGIN = 10
+    AI_HEIGHT = 120
+    AI_GUI_WIDTH = 150
+
+
 
     def __init__(self, state_file_path):
         try:
@@ -176,7 +183,7 @@ class Game:
         tile_image = load_image('tile.png', self.TILE_SIZE)
         mine_image = load_image('mine.png', self.TILE_SIZE)
         flag_image = load_image('flag.png', self.TILE_SIZE)
-        gui_font = load_font("Orbitron.ttf", self.GUI_FONT_SIZE)
+        gui_font = load_font("SpaceMono-Regular.ttf", self.GUI_FONT_SIZE)
 
         self.board = Board(
             self.n_rows, self.n_cols, self.n_mines,
@@ -222,6 +229,33 @@ class Game:
                                  max_value_length=3,
                                  key_filter=is_digit,
                                  on_enter_callback=self.on_mines_enter)
+        
+        # Place new buttons in the extra space
+        self.ai_button_1 = Button(gui_font, self.GUI_FONT_COLOR,
+                                "AI Move", self.new_feature_1_callback, self.GUI_AI_FONT_COLOR)
+
+        self.autoai_selector = SelectionGroup(
+            gui_font, 
+            self.GUI_FONT_COLOR,
+            "Automatic",
+            ["Yes", "No"],
+            initial_value=state.get('automatic', 'No'))
+        
+        # displaying stats for ai play
+        self.total_moves = Input(gui_font, self.GUI_FONT_COLOR,
+                                 "TOTAL MOVES", 0, width=self.AI_GUI_WIDTH)
+        self.logic_moves = Input(gui_font, self.GUI_FONT_COLOR,
+                                 "LOGIC MOVES", 0, width=self.AI_GUI_WIDTH)
+        self.guessed_moves = Input(gui_font, self.GUI_FONT_COLOR,
+                                 "GUESS MOVES", 0, width=self.AI_GUI_WIDTH)
+        
+        self.kb_size = Input(gui_font, self.GUI_FONT_COLOR,
+                            "   KNOWLEDGES", 0, width=self.AI_GUI_WIDTH)
+        self.known_safes = Input(gui_font, self.GUI_FONT_COLOR,
+                            "  KNOWN SAFES", 0, width=self.AI_GUI_WIDTH)
+        self.unkonw_cells = Input(gui_font, self.GUI_FONT_COLOR,
+                            "UNKNOWN CELLS", 0, width=self.AI_GUI_WIDTH)
+
 
         self.timer = Input(gui_font, self.GUI_FONT_COLOR,
                            "TIME", self.board.time)
@@ -270,8 +304,11 @@ class Game:
             max(self.n_cols, self.MIN_BOARD_DIMENSION_DISPLAY) * self.TILE_SIZE
         board_area_height = \
             max(self.n_rows, self.MIN_BOARD_DIMENSION_DISPLAY) * self.TILE_SIZE
+        ai_area_height = \
+            self.AI_HEIGHT
+        
         window_width = 3 * self.MARGIN + self.GUI_WIDTH + board_area_width
-        window_height = 3 * self.MARGIN + self.HUD_HEIGHT + board_area_height
+        window_height = 3 * self.MARGIN + self.HUD_HEIGHT + board_area_height + ai_area_height
 
         self.board_area_rect = pygame.Rect(2 * self.MARGIN + self.GUI_WIDTH,
                                            2 * self.MARGIN + self.HUD_HEIGHT,
@@ -294,6 +331,13 @@ class Game:
                                     2 * self.MARGIN + self.HUD_HEIGHT,
                                     self.GUI_WIDTH,
                                     board_area_height)
+        # Define a new area for additional buttons/features
+        self.ai_gui_rect = pygame.Rect(self.board_area_rect.x,
+                                      self.board_area_rect.bottom + self.BOTTOM_MARGIN,
+                                      self.GUI_WIDTH + 10,
+                                      ai_area_height)
+        
+
 
     def set_difficulty(self, difficulty):
         """Adjust game parameters given difficulty.
@@ -333,8 +377,7 @@ class Game:
                                                   + self.hud_rect.right
                                                   - hud_width)
 
-        self.show_leaderboard_button.rect.bottom = (self.screen_rect.height
-                                                    - self.MARGIN)
+        self.show_leaderboard_button.rect.top = self.mines_input.rect.bottom + self.MARGIN
         self.show_leaderboard_button.rect.centerx = (self.MARGIN
                                                      + 0.5 * self.GUI_WIDTH)
 
@@ -361,6 +404,12 @@ class Game:
             + self.leaderboard_announcement.rect.height)
         self.name_input.rect.centerx = self.screen_rect.centerx
 
+        self.ai_gui_rect.top = self.board_area_rect.bottom + self.BOTTOM_MARGIN
+        self.ai_gui_rect.x = self.gui_rect.x
+
+        self.ai_button_1.rect.topleft = (self.ai_gui_rect.x, self.ai_gui_rect.top + 10)
+        self.autoai_selector.rect.topleft = (self.ai_gui_rect.x, self.ai_button_1.rect.bottom + 10)
+
     def place_hud(self):
         """Place timer and mines info and return width of this block."""
         hud_width = max(self.timer.rect.width, self.current_mines.rect.width)
@@ -371,6 +420,28 @@ class Game:
             self.timer.rect.bottom + 0.4 * self.timer.rect.height)
         return hud_width
 
+    def place_ai_hud(self):
+        """Place information regardeing AI"""
+        self.total_moves.rect.topleft = (self.ai_gui_rect.right, self.ai_gui_rect.top + 10)
+        self.logic_moves.rect.topleft = (self.ai_gui_rect.right, self.total_moves.rect.bottom + 5)
+        self.guessed_moves.rect.topleft = (self.ai_gui_rect.right, self.logic_moves.rect.bottom + 5)
+
+        right = self.total_moves.rect.right
+        self.kb_size.rect.topleft = (right, self.ai_gui_rect.top + 10)
+        self.known_safes.rect.topleft = (right, self.total_moves.rect.bottom + 5)
+        self.unkonw_cells.rect.topleft = (right, self.known_safes.rect.bottom + 5)
+
+    def update_ai_stats(self, reset=False):
+        if reset:
+            self.total_moves.set_value(0)
+            self.logic_moves.set_value(0)
+            self.guessed_moves.set_value(0)
+            self.kb_size.set_value(0)
+            self.known_safes.set_value(0)
+            self.unkonw_cells.set_value(0)
+        else:
+            pass
+
     def reset_game(self):
         """Reset the game."""
         self.board.reset(n_rows=self.n_rows,
@@ -379,6 +450,8 @@ class Game:
 
     def show_leaderboard(self):
         """Change screen to leaderboard."""
+        # disabled
+        return
         self.mode = "leaderboard"
 
     def show_name_input(self):
@@ -493,7 +566,23 @@ class Game:
         self.status.draw(self.screen)
 
         self.restart_button.draw(self.screen)
-        self.show_leaderboard_button.draw(self.screen)
+
+        # buttons for ai
+        self.ai_button_1.draw(self.screen)
+        self.autoai_selector.draw(self.screen)
+
+        # draw ai statistics
+        self.total_moves.draw(self.screen)
+        self.logic_moves.draw(self.screen)
+        self.guessed_moves.draw(self.screen)
+
+        self.kb_size.draw(self.screen)
+        self.known_safes.draw(self.screen)
+        self.unkonw_cells.draw(self.screen)
+
+        # disable leaderboard
+        # self.show_leaderboard_button.draw(self.screen)
+
 
         pygame.display.flip()
 
@@ -519,14 +608,22 @@ class Game:
                 self.width_input.on_mouse_up(event.button)
                 self.mines_input.on_mouse_up(event.button)
                 self.restart_button.on_mouse_up(event.button)
-                self.show_leaderboard_button.on_mouse_up(event.button)
+                # self.show_leaderboard_button.on_mouse_up(event.button)
                 self.board.on_mouse_up(event.button)
+                self.ai_button_1.on_mouse_up(event.button)
+                self.autoai_selector.on_mouse_up(event.button)
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.board.on_mouse_down(event.button)
             elif event.type == pygame.KEYDOWN:
                 self.height_input.on_key_down(event)
                 self.width_input.on_key_down(event)
                 self.mines_input.on_key_down(event)
+
+    def new_feature_1_callback(self):
+        print("New Feature 1 activated!")
+
+    def new_feature_2_callback(self):
+        print("New Feature 2 activated!")
 
     def start_main_loop(self):
         """Start main game loop."""
@@ -537,6 +634,7 @@ class Game:
             self.timer.set_value(self.board.time)
             self.current_mines.set_value(self.board.n_mines_left)
             self.place_hud()
+            self.place_ai_hud()
             self.process_events()
             self.show_name_input_timer.check()
             self.draw_all()
