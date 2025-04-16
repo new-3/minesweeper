@@ -4,6 +4,7 @@ import pygame
 from . board import Board
 from . gui import SelectionGroup, Input, Button, Label, InputDialogue
 from . leaderboard import Leaderboard
+from . ai import MinesweeperAI
 
 
 ASSETS_DIR = os.path.join(os.path.dirname(__file__), 'assets')
@@ -432,6 +433,7 @@ class Game:
         self.unkonw_cells.rect.topleft = (right, self.known_safes.rect.bottom + 5)
 
     def update_ai_stats(self, reset=False):
+        # to be implemented
         if reset:
             self.total_moves.set_value(0)
             self.logic_moves.set_value(0)
@@ -657,5 +659,6 @@ def run(state_file_path):
     pygame.display.set_caption('Minesweeper')
     pygame.mouse.set_visible(True)
     game = Game(state_file_path)
+    ai = MinesweeperAI(state_file_path)
     game.start_main_loop()
     game.save_state(state_file_path)

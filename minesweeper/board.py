@@ -188,6 +188,16 @@ class Board:
         if self.on_status_change_callback is not None:
             self.on_status_change_callback(self.game_status)
 
+    def get_mine_count(self, i, j):
+        """Return number of mines around the cell
+           given the cell's status is OPENED.
+           Called by MinesweeperAI"""
+        if self.tile_status[i, j] != self.TILE_OPENED:
+            raise ValueError("function must be called for the eopened cell")
+        
+        return self.mine_count[i, j]
+        
+
     @property
     def time(self):
         """Return time passed from the game start."""
@@ -253,15 +263,18 @@ class Board:
 
     def _open_tiles(self, i, j):
         """Open tiles on click using the wave algorithm."""
+        """Return a list of opened cells. (For AI)"""
         queue = deque()
         queue.append((i, j))
         self.tile_status[i, j] = self.TILE_OPENED
         self.tiles_to_open -= 1
+        opened_cell = []
 
         while queue:
             i, j = queue.popleft()
             if self.mine_count[i, j] > 0:
                 continue
+            opened_cell.append((i, j))
 
             neighbors = self.get_neighbors(i, j)
             for k, l in neighbors:
@@ -269,11 +282,12 @@ class Board:
                     self.tile_status[k, l] = self.TILE_OPENED
                     self.tiles_to_open -= 1
                     queue.append((k, l))
-
+        
         if self.tiles_to_open == 0:
             self._change_game_status("victory")
             self.n_mines_left = 0
             self.tile_status[self.is_mine] = self.TILE_CHECKED
+        return opened_cell
 
     def _check_tile(self, i, j):
         """Check tile with a flag (right click action)."""
@@ -288,25 +302,29 @@ class Board:
         """Open tile (left click action)."""
         status = self.tile_status[i, j]
         if status == self.TILE_CHECKED:
-            return
+            return []
 
         if self.is_mine[i, j]:
             self._change_game_status("game_over")
             self.losing_indices = (i, j)
             self.tile_status[i, j] = self.TILE_OPENED
-            return
+            return []
 
+        # opening closed cell
         if status == self.TILE_CLOSED:
             if self.game_status == "before_start":
                 self._put_mines(i, j)
                 self.start_time = pygame.time.get_ticks()
                 self._change_game_status("running")
-            self._open_tiles(i, j)
-            return
+            opened_cell = self._open_tiles(i, j)
+            return opened_cell
 
+        # clicking already opened, empty cell
         if self.mine_count[i, j] == 0:
-            return
+            return []
+        
 
+        # open neighbors cells around already opened cell
         neighbors = self.get_neighbors(i, j)
         checked_count = sum(self.tile_status[k, l] == self.TILE_CHECKED
                             for k, l in neighbors)
@@ -317,9 +335,10 @@ class Board:
                         self.losing_indices = (k, l)
                         self._change_game_status("game_over")
                         self.tile_status[k, l] = self.TILE_OPENED
-                        return
+                        return []
 
-                    self._open_tiles(k, l)
+                    opened_cell = self._open_tiles(k, l)
+                    return opened_cell
 
     def _update_view_game_over(self):
         """Update view for game over state."""
